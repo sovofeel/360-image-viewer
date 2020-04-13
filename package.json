@@ -1,5 +1,5 @@
 {
-  "name": "360-image-player",
+  "name": "360-image-viewer",
   "version": "1.0.0",
   "description": "",
   "main": "main.js",
@@ -11,7 +11,7 @@
     "type": "git",
     "url": "git+https://github.com/graphoarty/360-image-player.git"
   },
-  "author": "",
+  "author": "sovofeel",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/graphoarty/360-image-player/issues"
