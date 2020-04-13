@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="./css/materialize.min.css">
     <script src="./js/materialize.min.js"></script>
     <script src="./js/three.min.js"></script>
+    <script src="./js/OrbitControls.js"></script>
 
     <style>
         body {
@@ -23,6 +24,20 @@
             top: 0;
             bottom: 0;
         }
+
+        .drop-container{
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: row;
+        }
+
+        .drop-title{
+            margin-left: 20px; 
+            color: #fff
+        }
     </style>
 
 </head>
@@ -30,49 +45,126 @@
 <body>
 
     <div id="webglviewer" class="full-screen"></div>
+    <div class="drop-container">
+        <div>
+            <a id="select-file-button" class="waves-effect waves-light btn">Select file</a>
+        </div>
+        <input type="file" id="select-file-input" style="display: none;">
+        <div class="drop-title">
+            <h6>Select a file or Drop it here</h6>
+        </div>
+    </div>
 
     <script>
-        var renderer = new THREE.WebGLRenderer();
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        let camera, controls, mesh = null
+        let selectButton = document.getElementById('select-file-button')
+        let fileInput = document.getElementById('select-file-input')
+        let renderer = new THREE.WebGLRenderer();
         document.getElementById('webglviewer').appendChild(renderer.domElement);
+        let  scene = new THREE.Scene(); 
+        resizeHandler()
 
-        var scene = new THREE.Scene();
+        function resizeHandler() {
+            renderer.setSize(window.innerWidth, window.innerHeight)
+            renderer.setPixelRatio(window.devicePixelRatio)
+            camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                1,
+                100000000
+            )
+            camera.position.set(0, 0, 0);
+            
 
-        var camera = new THREE.PerspectiveCamera(
-            75,
-            window.innerWidth / window.innerHeight,
-            1,
-            100000000
-        )
+            controls = new THREE.OrbitControls(camera, renderer.domElement)
+            controls.target.set(camera.position.x + .1, camera.position.y, camera.position.z)
+            controls.rotateSpeed = .5
+            controls.enableDumping = true
+            controls.dumpingFactor = .1
 
-        camera.position.set(0, 0, 0);
-        camera.lookAt(10, 0, 0);
+        }
 
-        var loader = new THREE.TextureLoader();
-        loader.load(
+        function createMesh(texturePath) {
+            let  loader = new THREE.TextureLoader();
+            loader.load(
+                texturePath,
 
-            'https://s3-us-west-2.amazonaws.com/farsight-v2/c162ce5ce8f37d9dfa343f33db722971/f8b358dd069d0509f64955fd88d7225c/5.jpg',
+                function (texture) {
 
-            function (texture) {
+                    if(mesh != null) {
+                        scene.remove(mesh)
+                    }
 
-                var material = new THREE.MeshBasicMaterial({
-                    map: texture
-                });
+                    let  material = new THREE.MeshBasicMaterial({
+                        map: texture
+                    });
 
-                var geometry = new THREE.SphereBufferGeometry(3, 32, 32);
-                geometry.scale(-1, 1, 1);
-                var sphere = new THREE.Mesh(geometry, material);
-                sphere.position.set(0, 0, 0);
-                scene.add(sphere);
+                    let  geometry = new THREE.SphereBufferGeometry(3, 32, 32);
+                    geometry.scale(-1, 1, 1);
+                    let  sphere = new THREE.Mesh(geometry, material);
+                    sphere.position = camera.position
+                    scene.add(sphere);
+                    
+                    renderer.render(scene, camera);
 
-                renderer.render(scene, camera);
+                }
+            );
+        }
+        
 
+        function loop() { 
+            requestAnimationFrame(loop)
+            controls.update()
+            renderer.render(scene, camera);
+        }
+
+        selectButton.addEventListener('click', function(e) {
+            fireClick(fileInput)
+        })
+
+        function fireClick(node){
+            if ( document.createEvent ) {
+                let evt = document.createEvent('MouseEvents');
+                evt.initEvent('click', true, false);
+                node.dispatchEvent(evt);    
+            } else if( document.createEventObject ) {
+                node.fireEvent('onclick') ; 
+            } else if (typeof node.onclick == 'function' ) {
+                node.onclick(); 
             }
+        }
+        
+        fileInput.onchange = function(e) {
+            createMesh(e.target.files[0].path)
+        }
 
-        );
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault()
 
-        renderer.render(scene, camera);
+            e.dataTransfer.dropEffect = 'copy'
+        }) 
+
+        document.addEventListener('dragenter', (e) => {
+            e.preventDefault()
+            document.body.style.opacity = .5
+        })
+
+        document.addEventListener('dragleave', (e) => {
+            e.preventDefault()
+            document.body.style.opacity = 1
+        })
+
+        document.addEventListener('drop', (e) => {
+            e.preventDefault()
+            document.body.style.opacity = 1
+            createMesh(e.dataTransfer.files[0].path)
+
+        })
+        
+
+        loop()
+
+        window.addEventListener('resize', resizeHandler, false)
 
     </script>
 

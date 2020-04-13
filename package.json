@@ -19,5 +19,5 @@
   "homepage": "https://github.com/graphoarty/360-image-player#readme",
   "devDependencies": {
     "electron": "^4.0.1"
-  }
+  },
 }
